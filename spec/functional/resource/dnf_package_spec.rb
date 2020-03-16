@@ -638,7 +638,7 @@ describe Chef::Resource::DnfPackage, :requires_root, external: exclude_test do
         dnf_package.version("1.2")
         dnf_package.run_action(:install)
         expect(dnf_package.updated_by_last_action?).to be true
-        expect(shell_out("rpm -q chef_rpm").stdout.chomp).to eql("^chef_rpm-1.2-1.#{pkg_arch}")
+        expect(shell_out("rpm -q chef_rpm").stdout.chomp).to match("^chef_rpm-1.2-1.#{pkg_arch}")
       end
 
       it "throws a deprecation warning with allow_downgrade" do
@@ -649,7 +649,7 @@ describe Chef::Resource::DnfPackage, :requires_root, external: exclude_test do
         dnf_package.run_action(:install)
         dnf_package.allow_downgrade true
         expect(dnf_package.updated_by_last_action?).to be true
-        expect(shell_out("rpm -q chef_rpm").stdout.chomp).to eql("^chef_rpm-1.2-1.#{pkg_arch}")
+        expect(shell_out("rpm -q chef_rpm").stdout.chomp).to match("^chef_rpm-1.2-1.#{pkg_arch}")
       end
     end
 
@@ -911,10 +911,6 @@ describe Chef::Resource::DnfPackage, :requires_root, external: exclude_test do
   end
 
   describe ":lock and :unlock" do
-    before(:all) do
-      shell_out!("dnf install python-dnf-plugins-extras-versionlock")
-    end
-
     before(:each) do
       shell_out("dnf versionlock delete '*:chef_rpm-*'") # will exit with error when nothing is locked, we don't care
     end
