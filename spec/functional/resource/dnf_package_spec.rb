@@ -41,6 +41,10 @@ describe Chef::Resource::DnfPackage, :requires_root, external: exclude_test do
     flush_cache
   end
 
+  before(:all) do
+    shell_out!("dnf -y install dnf-plugins-core")
+  end
+
   before(:each) do
     File.open("/etc/yum.repos.d/chef-dnf-localtesting.repo", "w+") do |f|
       f.write <<~EOF
@@ -628,6 +632,26 @@ describe Chef::Resource::DnfPackage, :requires_root, external: exclude_test do
   end
 
   describe ":upgrade" do
+    context "downgrades" do
+      it "just work with DNF" do
+        preinstall("chef_rpm-1.10-1.#{pkg_arch}.rpm")
+        dnf_package.version("1.2")
+        dnf_package.run_action(:install)
+        expect(dnf_package.updated_by_last_action?).to be true
+        expect(shell_out("rpm -q chef_rpm").stdout.chomp).to eql("^chef_rpm-1.2-1.#{pkg_arch}")
+      end
+
+      it "throws a deprecation warning with allow_downgrade" do
+        Chef::Config[:treat_deprecation_warnings_as_errors] = false
+        expect(Chef).to receive(:deprecated).with(:dnf_package_allow_downgrade, /^the allow_downgrade property on the dnf_package provider is not used/)
+        preinstall("chef_rpm-1.10-1.#{pkg_arch}.rpm")
+        dnf_package.version("1.2")
+        dnf_package.run_action(:install)
+        dnf_package.allow_downgrade true
+        expect(dnf_package.updated_by_last_action?).to be true
+        expect(shell_out("rpm -q chef_rpm").stdout.chomp).to eql("^chef_rpm-1.2-1.#{pkg_arch}")
+      end
+    end
 
     context "with source arguments" do
       it "installs the package when using the source argument" do
@@ -887,9 +911,9 @@ describe Chef::Resource::DnfPackage, :requires_root, external: exclude_test do
   end
 
   describe ":lock and :unlock" do
-    # before(:all) do
-    #   shell_out!("yum -y install yum-versionlock")
-    # end
+    before(:all) do
+      shell_out!("dnf install python-dnf-plugins-extras-versionlock")
+    end
 
     before(:each) do
       shell_out("dnf versionlock delete '*:chef_rpm-*'") # will exit with error when nothing is locked, we don't care
