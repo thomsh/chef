@@ -180,7 +180,6 @@ describe Chef::Resource::DnfPackage, :requires_root, external: exclude_test do
 
       it "downgrades when the installed version is higher than the package_name version" do
         preinstall("chef_rpm-1.10-1.#{pkg_arch}.rpm")
-        dnf_package.allow_downgrade true
         dnf_package.package_name("chef_rpm-1.2")
         dnf_package.run_action(:install)
         expect(dnf_package.updated_by_last_action?).to be true
@@ -188,7 +187,7 @@ describe Chef::Resource::DnfPackage, :requires_root, external: exclude_test do
       end
     end
 
-    # version only matches the actual yum version, does not work with epoch or release or combined evr
+    # version only matches the actual dnf version, does not work with epoch or release or combined evr
     context "with version property" do
       it "matches the full version" do
         flush_cache
@@ -200,9 +199,6 @@ describe Chef::Resource::DnfPackage, :requires_root, external: exclude_test do
       end
 
       it "matches with a glob" do
-        # we are unlikely to ever fix this.  if you've found this comment you should use e.g. "tcpdump-4*" in
-        # the name field rather than trying to use a name of "tcpdump" and a version of "4*".
-        pending "this does not work, is not easily supported by the underlying yum libraries, but does work in the new dnf_package provider"
         flush_cache
         dnf_package.package_name("chef_rpm")
         dnf_package.version("1*")
@@ -255,7 +251,6 @@ describe Chef::Resource::DnfPackage, :requires_root, external: exclude_test do
         flush_cache
         preinstall("chef_rpm-1.10-1.#{pkg_arch}.rpm")
         dnf_package.package_name("chef_rpm")
-        dnf_package.allow_downgrade true
         dnf_package.version("1.2-1")
         dnf_package.run_action(:install)
         expect(dnf_package.updated_by_last_action?).to be true
@@ -378,7 +373,6 @@ describe Chef::Resource::DnfPackage, :requires_root, external: exclude_test do
 
       it "with a less than constraint, when nothing is installed, it installs" do
         flush_cache
-        dnf_package.allow_downgrade true
         dnf_package.package_name("chef_rpm < 1.10")
         dnf_package.run_action(:install)
         expect(dnf_package.updated_by_last_action?).to be true
@@ -387,7 +381,6 @@ describe Chef::Resource::DnfPackage, :requires_root, external: exclude_test do
 
       it "with a less than constraint, when the install version matches, it does nothing" do
         preinstall("chef_rpm-1.2-1.#{pkg_arch}.rpm")
-        dnf_package.allow_downgrade true
         dnf_package.package_name("chef_rpm < 1.10")
         dnf_package.run_action(:install)
         expect(dnf_package.updated_by_last_action?).to be false
@@ -396,7 +389,6 @@ describe Chef::Resource::DnfPackage, :requires_root, external: exclude_test do
 
       it "with a less than constraint, when the install version fails, it should downgrade" do
         preinstall("chef_rpm-1.10-1.#{pkg_arch}.rpm")
-        dnf_package.allow_downgrade true
         dnf_package.package_name("chef_rpm < 1.10")
         dnf_package.run_action(:install)
         expect(dnf_package.updated_by_last_action?).to be true
@@ -437,20 +429,9 @@ describe Chef::Resource::DnfPackage, :requires_root, external: exclude_test do
         expect(shell_out("rpm -q --queryformat '%{NAME}-%{VERSION}-%{RELEASE}.%{ARCH}\n' chef_rpm").stdout.chomp).to match("^chef_rpm-1.2-1.#{pkg_arch}$")
       end
 
-      it "downgrade on a local file is ignored when allow_downgrade is false" do
-        preinstall("chef_rpm-1.10-1.#{pkg_arch}.rpm")
-        dnf_package.allow_downgrade false
-        dnf_package.version "1.2-1"
-        dnf_package.package_name("#{CHEF_SPEC_ASSETS}/yumrepo/chef_rpm-1.2-1.#{pkg_arch}.rpm")
-        dnf_package.run_action(:install)
-        expect(dnf_package.updated_by_last_action?).to be false
-        expect(shell_out("rpm -q --queryformat '%{NAME}-%{VERSION}-%{RELEASE}.%{ARCH}\n' chef_rpm").stdout.chomp).to match("^chef_rpm-1.10-1.#{pkg_arch}$")
-      end
-
       it "downgrade on a local file with allow_downgrade true works" do
         preinstall("chef_rpm-1.10-1.#{pkg_arch}.rpm")
         dnf_package.version "1.2-1"
-        dnf_package.allow_downgrade true
         dnf_package.package_name("#{CHEF_SPEC_ASSETS}/yumrepo/chef_rpm-1.2-1.#{pkg_arch}.rpm")
         dnf_package.run_action(:install)
         expect(dnf_package.updated_by_last_action?).to be true
@@ -614,7 +595,7 @@ describe Chef::Resource::DnfPackage, :requires_root, external: exclude_test do
       end
 
       it "should work to enable a disabled repo" do
-        shell_out!("yum-config-manager --disable chef-dnf-localtesting")
+        shell_out!("dnf config-manager --set-disabled chef-dnf-localtesting")
         flush_cache
         expect { dnf_package.run_action(:install) }.to raise_error(Chef::Exceptions::Package, /No candidate version available/)
         flush_cache
@@ -635,7 +616,7 @@ describe Chef::Resource::DnfPackage, :requires_root, external: exclude_test do
         dnf_package.run_action(:upgrade)
         expect(dnf_package.updated_by_last_action?).to be false
         expect(shell_out("rpm -q --queryformat '%{NAME}-%{VERSION}-%{RELEASE}.%{ARCH}\n' chef_rpm").stdout.chomp).to match("^chef_rpm-1.2-1.#{pkg_arch}$")
-        # now we're still using the same cache in the yum_helper.py cache and we test to see if the
+        # now we're still using the same cache in the dnf_helper.py cache and we test to see if the
         # repo that we temporarily disabled is enabled on this pass.
         dnf_package.package_name("chef_rpm-1.10-1.#{pkg_arch}")
         dnf_package.options(nil)
@@ -669,7 +650,6 @@ describe Chef::Resource::DnfPackage, :requires_root, external: exclude_test do
 
       it "downgrades the package when allow_downgrade is true" do
         preinstall("chef_rpm-1.10-1.#{pkg_arch}.rpm")
-        dnf_package.allow_downgrade true
         dnf_package.package_name("#{CHEF_SPEC_ASSETS}/yumrepo/chef_rpm-1.2-1.#{pkg_arch}.rpm")
         dnf_package.run_action(:upgrade)
         expect(dnf_package.updated_by_last_action?).to be true
@@ -732,7 +712,6 @@ describe Chef::Resource::DnfPackage, :requires_root, external: exclude_test do
 
       it "with an equality pin in the name it downgrades a later package" do
         preinstall("chef_rpm-1.10-1.#{pkg_arch}.rpm")
-        dnf_package.allow_downgrade true
         dnf_package.package_name("chef_rpm-1.2")
         dnf_package.run_action(:upgrade)
         expect(dnf_package.updated_by_last_action?).to be true
@@ -741,7 +720,6 @@ describe Chef::Resource::DnfPackage, :requires_root, external: exclude_test do
 
       it "with a prco equality pin in the name it downgrades a later package" do
         preinstall("chef_rpm-1.10-1.#{pkg_arch}.rpm")
-        dnf_package.allow_downgrade true
         dnf_package.package_name("chef_rpm == 1.2")
         dnf_package.run_action(:upgrade)
         expect(dnf_package.updated_by_last_action?).to be true
@@ -790,7 +768,6 @@ describe Chef::Resource::DnfPackage, :requires_root, external: exclude_test do
 
       it "with a < pin in the name and non-matching rpm installed it downgrades" do
         preinstall("chef_rpm-1.10-1.#{pkg_arch}.rpm")
-        dnf_package.allow_downgrade true
         dnf_package.package_name("chef_rpm < 1.10")
         dnf_package.run_action(:upgrade)
         expect(dnf_package.updated_by_last_action?).to be true
@@ -910,12 +887,12 @@ describe Chef::Resource::DnfPackage, :requires_root, external: exclude_test do
   end
 
   describe ":lock and :unlock" do
-    before(:all) do
-      shell_out!("yum -y install yum-versionlock")
-    end
+    # before(:all) do
+    #   shell_out!("yum -y install yum-versionlock")
+    # end
 
     before(:each) do
-      shell_out("yum versionlock delete '*:chef_rpm-*'") # will exit with error when nothing is locked, we don't care
+      shell_out("dnf versionlock delete '*:chef_rpm-*'") # will exit with error when nothing is locked, we don't care
     end
 
     it "locks an rpm" do
@@ -923,25 +900,25 @@ describe Chef::Resource::DnfPackage, :requires_root, external: exclude_test do
       dnf_package.package_name("chef_rpm")
       dnf_package.run_action(:lock)
       expect(dnf_package.updated_by_last_action?).to be true
-      expect(shell_out("yum versionlock list").stdout.chomp).to match("^0:chef_rpm-")
+      expect(shell_out("dnf versionlock list").stdout.chomp).to match("^0:chef_rpm-")
     end
 
     it "does not lock if its already locked" do
       flush_cache
-      shell_out!("yum versionlock add chef_rpm")
+      shell_out!("dnf versionlock add chef_rpm")
       dnf_package.package_name("chef_rpm")
       dnf_package.run_action(:lock)
       expect(dnf_package.updated_by_last_action?).to be false
-      expect(shell_out("yum versionlock list").stdout.chomp).to match("^0:chef_rpm-")
+      expect(shell_out("dnf versionlock list").stdout.chomp).to match("^0:chef_rpm-")
     end
 
     it "unlocks an rpm" do
       flush_cache
-      shell_out!("yum versionlock add chef_rpm")
+      shell_out!("dnf versionlock add chef_rpm")
       dnf_package.package_name("chef_rpm")
       dnf_package.run_action(:unlock)
       expect(dnf_package.updated_by_last_action?).to be true
-      expect(shell_out("yum versionlock list").stdout.chomp).not_to match("^0:chef_rpm-")
+      expect(shell_out("dnf versionlock list").stdout.chomp).not_to match("^0:chef_rpm-")
     end
 
     it "does not unlock an already locked rpm" do
@@ -949,7 +926,7 @@ describe Chef::Resource::DnfPackage, :requires_root, external: exclude_test do
       dnf_package.package_name("chef_rpm")
       dnf_package.run_action(:unlock)
       expect(dnf_package.updated_by_last_action?).to be false
-      expect(shell_out("yum versionlock list").stdout.chomp).not_to match("^0:chef_rpm-")
+      expect(shell_out("dnf versionlock list").stdout.chomp).not_to match("^0:chef_rpm-")
     end
 
     it "check that we can lock based on provides" do
@@ -957,16 +934,16 @@ describe Chef::Resource::DnfPackage, :requires_root, external: exclude_test do
       dnf_package.package_name("chef_rpm_provides")
       dnf_package.run_action(:lock)
       expect(dnf_package.updated_by_last_action?).to be true
-      expect(shell_out("yum versionlock list").stdout.chomp).to match("^0:chef_rpm-")
+      expect(shell_out("dnf versionlock list").stdout.chomp).to match("^0:chef_rpm-")
     end
 
     it "check that we can unlock based on provides" do
       flush_cache
-      shell_out!("yum versionlock add chef_rpm")
+      shell_out!("dnf versionlock add chef_rpm")
       dnf_package.package_name("chef_rpm_provides")
       dnf_package.run_action(:unlock)
       expect(dnf_package.updated_by_last_action?).to be true
-      expect(shell_out("yum versionlock list").stdout.chomp).not_to match("^0:chef_rpm-")
+      expect(shell_out("dnf versionlock list").stdout.chomp).not_to match("^0:chef_rpm-")
     end
   end
 end
