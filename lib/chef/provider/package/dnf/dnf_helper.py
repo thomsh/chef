@@ -44,10 +44,12 @@ def flushcache():
 def versioncompare(versions):
     sack = get_sack()
     if (versions[0] is None) or (versions[1] is None):
-      sys.stdout.write('0\n')
+      outpipe.write('0\n')
+      outpipe.flush()
     else:
       evr_comparison = sack.evr_cmp(versions[0], versions[1])
-      sys.stdout.write('{}\n'.format(evr_comparison))
+      outpipe.write('{}\n'.format(evr_comparison))
+      outpipe.flush()
 
 def query(command):
     sack = get_sack()
@@ -79,12 +81,14 @@ def query(command):
     pkgs = q.latest(1).run()
 
     if not pkgs:
-        sys.stdout.write('{} nil nil\n'.format(command['provides'].split().pop(0)))
+        outpipe.write('{} nil nil\n'.format(command['provides'].split().pop(0)))
+        outpipe.flush()
     else:
         # make sure we picked the package with the highest version
         pkgs.sort
         pkg = pkgs.pop()
-        sys.stdout.write('{} {}:{}-{} {}\n'.format(pkg.name, pkg.epoch, pkg.version, pkg.release, pkg.arch))
+        outpipe.write('{} {}:{}-{} {}\n'.format(pkg.name, pkg.epoch, pkg.version, pkg.release, pkg.arch))
+        outpipe.flush()
 
 # the design of this helper is that it should try to be 'brittle' and fail hard and exit in order
 # to keep process tables clean.  additional error handling should probably be added to the retry loop
@@ -119,7 +123,7 @@ try:
 
         try:
             command = json.loads(line)
-        except ValueError, e:
+        except ValueError:
             raise RuntimeError("bad json parse")
 
         if command['action'] == "whatinstalled":
