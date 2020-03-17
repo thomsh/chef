@@ -229,8 +229,7 @@ describe Chef::Resource::DnfPackage, :requires_root, external: exclude_test do
         expect(shell_out("rpm -q --queryformat '%{NAME}-%{VERSION}-%{RELEASE}.%{ARCH}\n' chef_rpm").stdout.chomp).to match("^chef_rpm-1.10-1.#{pkg_arch}$")
       end
 
-      it "matches with a vr glob" do
-        pending "doesn't work on command line either"
+      it "matches with a vr glob", :rhel_gte_8 do
         flush_cache
         dnf_package.package_name("chef_rpm")
         dnf_package.version("1.10-1*")
@@ -239,8 +238,7 @@ describe Chef::Resource::DnfPackage, :requires_root, external: exclude_test do
         expect(shell_out("rpm -q --queryformat '%{NAME}-%{VERSION}-%{RELEASE}.%{ARCH}\n' chef_rpm").stdout.chomp).to match("^chef_rpm-1.10-1.#{pkg_arch}$")
       end
 
-      it "matches with an evr glob" do
-        pending "doesn't work on command line either"
+      it "matches with an evr glob", :rhel_gte_8 do
         flush_cache
         dnf_package.package_name("chef_rpm")
         dnf_package.version("0:1.10-1*")
