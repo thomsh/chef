@@ -911,6 +911,10 @@ describe Chef::Resource::DnfPackage, :requires_root, external: exclude_test do
   end
 
   describe ":lock and :unlock" do
+    before(:all) do
+      shell_out("dnf -y install python3-dnf-plugin-versionlock")
+    end
+
     before(:each) do
       shell_out("dnf versionlock delete '*:chef_rpm-*'") # will exit with error when nothing is locked, we don't care
     end

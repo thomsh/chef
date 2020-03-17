@@ -149,7 +149,7 @@ class Chef
         def locked_packages
           @locked_packages ||=
             begin
-              locked = yum("versionlock", "list")
+              locked = dnf("versionlock", "list")
               locked.stdout.each_line.map do |line|
                 line.sub(/-[^-]*-[^-]*$/, "").split(":").last.strip
               end
