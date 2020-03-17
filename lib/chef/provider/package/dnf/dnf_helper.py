@@ -26,6 +26,16 @@ def get_sack():
         except AttributeError:
             pass
         base.read_all_repos()
+
+        if 'repos' in command:
+            for repo_pattern in command['repos']:
+                if 'enable' in repo_pattern:
+                    for repo in repos.get_matching(repo_pattern['enable']):
+                        repo.enable()
+                if 'disable' in repo_pattern:
+                    for repo in repos.get_matching(repo_pattern['disable']):
+                        repo.disable()
+
         try:
             base.configure_plugins()
         except AttributeError:
