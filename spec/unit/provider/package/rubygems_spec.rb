@@ -1036,4 +1036,24 @@ describe Chef::Provider::Package::Rubygems, "clear_sources?" do
       expect(provider.clear_sources?).to be true
     end
   end
+
+  context "when Chef::Config[:rubygems_url] is set" do
+    before do
+      Chef::Config.rubygems_url = "https://example.com/"
+    end
+
+    it "is true when clear_sources is unset" do
+      expect(provider.clear_sources?).to be true
+    end
+
+    it "is false when clear_sources is set false" do
+      new_resource.clear_sources(false)
+      expect(provider.clear_sources?).to be false
+    end
+
+    it "is true when clear_sources is set true" do
+      new_resource.clear_sources(true)
+      expect(provider.clear_sources?).to be true
+    end
+  end
 end
