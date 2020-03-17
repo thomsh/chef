@@ -90,26 +90,48 @@ def query(command):
 # to keep process tables clean.  additional error handling should probably be added to the retry loop
 # on the ruby side.
 def exit_handler(signal, frame):
+    if base is not None:
+        base.closeRpmDB()
     sys.exit(0)
 
-signal.signal(signal.SIGINT, exit_handler)
-signal.signal(signal.SIGHUP, exit_handler)
-signal.signal(signal.SIGPIPE, exit_handler)
+def setup_exit_handler():
+    signal.signal(signal.SIGINT, exit_handler)
+    signal.signal(signal.SIGHUP, exit_handler)
+    signal.signal(signal.SIGPIPE, exit_handler)
+    signal.signal(signal.SIGQUIT, exit_handler)
 
-while 1:
-    # kill self if we get orphaned (tragic)
-    ppid = os.getppid()
-    if ppid == 1:
-        sys.exit(0)
-    line = sys.stdin.readline()
-    command = json.loads(line)
-    if command['action'] == "whatinstalled":
-        query(command)
-    elif command['action'] == "whatavailable":
-        query(command)
-    elif command['action'] == "flushcache":
-        flushcache()
-    elif command['action'] == "versioncompare":
-        versioncompare(command['versions'])
-    else:
-        raise RuntimeError("bad command")
+if len(sys.argv) < 3:
+  inpipe = sys.stdin
+  outpipe = sys.stdout
+else:
+  inpipe = os.fdopen(int(sys.argv[1]), "r")
+  outpipe = os.fdopen(int(sys.argv[2]), "w")
+
+try:
+    while 1:
+        # kill self if we get orphaned (tragic)
+        ppid = os.getppid()
+        if ppid == 1:
+            raise RuntimeError("orphaned")
+
+        setup_exit_handler()
+        line = inpipe.readline()
+
+        try:
+            command = json.loads(line)
+        except ValueError, e:
+            raise RuntimeError("bad json parse")
+
+        if command['action'] == "whatinstalled":
+            query(command)
+        elif command['action'] == "whatavailable":
+            query(command)
+        elif command['action'] == "versioncompare":
+            versioncompare(command['versions'])
+        elif command['action'] == "installonlypkgs":
+             install_only_packages(command['package'])
+        else:
+            raise RuntimeError("bad command")
+finally:
+    if base is not None:
+        base.closeRpmDB()
