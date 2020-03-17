@@ -916,7 +916,7 @@ describe Chef::Resource::DnfPackage, :requires_root, external: exclude_test do
     end
 
     before(:each) do
-      shell_out("dnf versionlock delete '*:chef_rpm-*'") # will exit with error when nothing is locked, we don't care
+      shell_out("dnf versionlock delete 'chef_rpm-*'") # will exit with error when nothing is locked, we don't care
     end
 
     it "locks an rpm" do
@@ -924,7 +924,7 @@ describe Chef::Resource::DnfPackage, :requires_root, external: exclude_test do
       dnf_package.package_name("chef_rpm")
       dnf_package.run_action(:lock)
       expect(dnf_package.updated_by_last_action?).to be true
-      expect(shell_out("dnf versionlock list").stdout.chomp).to match("^0:chef_rpm-")
+      expect(shell_out("dnf versionlock list").stdout.chomp).to match("^chef_rpm-0:")
     end
 
     it "does not lock if its already locked" do
@@ -933,7 +933,7 @@ describe Chef::Resource::DnfPackage, :requires_root, external: exclude_test do
       dnf_package.package_name("chef_rpm")
       dnf_package.run_action(:lock)
       expect(dnf_package.updated_by_last_action?).to be false
-      expect(shell_out("dnf versionlock list").stdout.chomp).to match("^0:chef_rpm-")
+      expect(shell_out("dnf versionlock list").stdout.chomp).to match("^chef_rpm-0:")
     end
 
     it "unlocks an rpm" do
@@ -942,7 +942,7 @@ describe Chef::Resource::DnfPackage, :requires_root, external: exclude_test do
       dnf_package.package_name("chef_rpm")
       dnf_package.run_action(:unlock)
       expect(dnf_package.updated_by_last_action?).to be true
-      expect(shell_out("dnf versionlock list").stdout.chomp).not_to match("^0:chef_rpm-")
+      expect(shell_out("dnf versionlock list").stdout.chomp).not_to match("^chef_rpm-0:")
     end
 
     it "does not unlock an already locked rpm" do
@@ -950,7 +950,7 @@ describe Chef::Resource::DnfPackage, :requires_root, external: exclude_test do
       dnf_package.package_name("chef_rpm")
       dnf_package.run_action(:unlock)
       expect(dnf_package.updated_by_last_action?).to be false
-      expect(shell_out("dnf versionlock list").stdout.chomp).not_to match("^0:chef_rpm-")
+      expect(shell_out("dnf versionlock list").stdout.chomp).not_to match("^chef_rpm-0:")
     end
 
     it "check that we can lock based on provides" do
@@ -958,7 +958,7 @@ describe Chef::Resource::DnfPackage, :requires_root, external: exclude_test do
       dnf_package.package_name("chef_rpm_provides")
       dnf_package.run_action(:lock)
       expect(dnf_package.updated_by_last_action?).to be true
-      expect(shell_out("dnf versionlock list").stdout.chomp).to match("^0:chef_rpm-")
+      expect(shell_out("dnf versionlock list").stdout.chomp).to match("^chef_rpm-0:")
     end
 
     it "check that we can unlock based on provides" do
@@ -967,7 +967,7 @@ describe Chef::Resource::DnfPackage, :requires_root, external: exclude_test do
       dnf_package.package_name("chef_rpm_provides")
       dnf_package.run_action(:unlock)
       expect(dnf_package.updated_by_last_action?).to be true
-      expect(shell_out("dnf versionlock list").stdout.chomp).not_to match("^0:chef_rpm-")
+      expect(shell_out("dnf versionlock list").stdout.chomp).not_to match("^chef_rpm-0:")
     end
   end
 end
