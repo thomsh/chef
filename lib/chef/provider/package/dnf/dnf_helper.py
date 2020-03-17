@@ -26,6 +26,7 @@ def get_sack():
         except AttributeError:
             pass
         base.read_all_repos()
+        repos = base.repos
 
         if 'repos' in command:
             for repo_pattern in command['repos']:
@@ -105,7 +106,7 @@ def query(command):
 # on the ruby side.
 def exit_handler(signal, frame):
     if base is not None:
-        base.closeRpmDB()
+        base.close()
     sys.exit(0)
 
 def setup_exit_handler():
