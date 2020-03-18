@@ -18,8 +18,8 @@ GIT
 
 GIT
   remote: https://github.com/chef/omnibus-software
-  revision: c086d8057ac9a15486fe2010009db0dee1cea682
-  branch: master
+  revision: acfeeccba97615550358d40313a8b125b99f50e3
+  branch: jsinha/remove_bundler_dependencies
   specs:
     omnibus-software (4.0.0)
       omnibus (>= 5.6.1)
